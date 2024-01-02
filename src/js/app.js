@@ -4,6 +4,11 @@ import GUI from 'lil-gui';
 import { gsap } from 'gsap';
 import CreateMesh from './Object/CreateMesh';
 
+  /**
+   *  전역변수
+   */
+
+let mesh1, mesh2
 
 export default function () {
   /**
@@ -25,6 +30,9 @@ export default function () {
 
 
   const scene = new THREE.Scene();
+
+
+
 
 
   /**
@@ -56,8 +64,10 @@ export default function () {
    * 
    */
   const create = () => {
-    createMesh.mesh1()
-    createMesh.mesh2()
+    mesh1 = createMesh.mesh1()
+    mesh2 = createMesh.mesh2()
+    
+    scene.add(mesh1,mesh2)
   };
 
 
