@@ -2,15 +2,22 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import GUI from 'lil-gui';
 import { gsap } from 'gsap';
-import CreateMesh from './Object/CreateMesh';
+import CreateMeshs from './Object/CreateMeshs';
+import CreateLights from './Object/CreateLights';
+/**
+ *  전역변수
+*/
 
-  /**
-   *  전역변수
-   */
-
-let mesh1, mesh2
+let backgroundPlane, mesh1, Light1, bgTexture
 
 export default function () {
+  /**
+   *  변수
+  */
+ const buttons = document.querySelectorAll('button');
+ 
+ const textureLoader = new THREE.TextureLoader()
+
   /**
    *  랜더 및 카메라 등록
    */
@@ -26,19 +33,14 @@ export default function () {
     width: window.innerWidth,
     height: window.innerHeight,
   };
-
-
-
   const scene = new THREE.Scene();
-
-
-
 
 
   /**
    *  other folder files and libray import on here
    */
-  const createMesh = new CreateMesh()
+  const createMeshs = new CreateMeshs()
+  const createLights = new CreateLights()
   const gui = new GUI();
 
   /** Camera */
@@ -48,8 +50,7 @@ export default function () {
     0.1,
     100
   );
-  camera.position.set(0, 5,10);
-
+  camera.position.set( 0, 0, 6);
 
   /** Controls */
   const orbitControls = () => {
@@ -57,6 +58,11 @@ export default function () {
     return controls;
   }
   
+  /**
+  * textureload
+  */
+  bgTexture = textureLoader.load('public/assets/images/image001.jpg')
+
 
   /** 
    * 오브젝트 생성
@@ -64,10 +70,13 @@ export default function () {
    * 
    */
   const create = () => {
-    mesh1 = createMesh.mesh1()
-    mesh2 = createMesh.mesh2()
-    
-    scene.add(mesh1,mesh2)
+    backgroundPlane = createMeshs.backgroundPlane()
+    mesh1 = createMeshs.createMesh1()
+    Light1 = createLights.createLight1()
+
+    backgroundPlane.material.map = bgTexture;
+
+    scene.add(backgroundPlane,mesh1,Light1)
   };
 
 
@@ -91,6 +100,25 @@ export default function () {
    */
   const addEvent = () => {
     window.addEventListener('resize', resize);
+
+    /**
+     * button click animation to change camera position
+     */
+    buttons.forEach((button,index) => {
+      button.addEventListener('click', (e) => {
+        switch (index) {
+          case 0:
+            camera.position.set( 4,0,6)
+            break;
+          case 1:
+            camera.position.set(0,5,6)
+            break;
+          case 2:
+            camera.position.set(0,0,8)
+          break;
+        }
+      })
+    })
   };
   
 
@@ -101,7 +129,8 @@ export default function () {
   const draw = ( orbitControl) => {
     orbitControl.update();
     renderer.render(scene, camera);
-    
+    mesh1.rotation.y += 0.001
+    mesh1.rotation.z += 0.001
     requestAnimationFrame(() => {
       draw(orbitControl);
     });
