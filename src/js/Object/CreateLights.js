@@ -9,7 +9,7 @@ export default class CreateLights {
      * createLigt Light1 생성
      */
     createLight1(){
-        this.light1 = new THREE.DirectionalLight(0xfff0dd, 1);
+        this.light1 = new THREE.DirectionalLight(0xffffff, 1);
         this.light1.position.set(0, 5, 10);
         return this.light1
     }

@@ -2,29 +2,32 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import GUI from 'lil-gui';
 import { gsap } from 'gsap';
-import CreateMeshs from './Object/CreateMeshs';
+import CreatePaticle from './Object/CreatePaticle';
 import CreateLights from './Object/CreateLights';
 /**
  *  전역변수
 */
 
-let backgroundPlane, mesh1, Light1, bgTexture
-
+let Light1, bgTexture, mirrorballMetalnessMap, mirrorballTexture, mirrorballRoughnessMap, mirrorballDISP, mirrorballNRM, mirrorballBUMP
+let particles = []
+let particlesCount = 4720;
+let click = 0
 export default function () {
+ 
   /**
    *  변수
   */
- const buttons = document.querySelectorAll('button');
- 
  const textureLoader = new THREE.TextureLoader()
 
+ 
   /**
    *  랜더 및 카메라 등록
    */
   const renderer = new THREE.WebGLRenderer({
     alpha: true,
+    antialias: true
   });
-  renderer.setClearColor(0x0a5545, 1);
+  renderer.setClearColor(0x061832, 1);
 
   const container = document.querySelector('#container');
   container.appendChild(renderer.domElement);
@@ -39,9 +42,10 @@ export default function () {
   /**
    *  other folder files and libray import on here
    */
-  const createMeshs = new CreateMeshs()
+  // const createPaticle = new CreatePaticle()
   const createLights = new CreateLights()
   const gui = new GUI();
+  let particleGroup = new THREE.Group()
 
   /** Camera */
   const camera = new THREE.PerspectiveCamera(
@@ -50,7 +54,7 @@ export default function () {
     0.1,
     100
   );
-  camera.position.set( 0, 0, 6);
+  camera.position.set( 0, 0, 70);
 
   /** Controls */
   const orbitControls = () => {
@@ -61,8 +65,14 @@ export default function () {
   /**
   * textureload
   */
-  bgTexture = textureLoader.load('public/assets/images/image001.jpg')
-
+  bgTexture = textureLoader.load()
+  mirrorballTexture = textureLoader.load('public/assets/texture/MetalGoldPaint002/MetalGoldPaint002_COL_1K_METALNESS.png')
+  mirrorballDISP = textureLoader.load('public/assets/texture/MetalGoldPaint002/MetalGoldPaint002_DISP16_1K_METALNESS.png')
+  mirrorballNRM = textureLoader.load('public/assets/texture/MetalGoldPaint002/MetalGoldPaint002_DISP16_1K_METALNESS.png')
+  mirrorballBUMP = textureLoader.load('public/assets/texture/MetalGoldPaint002/MetalGoldPaint002_BUMP_1K_METALNESS.png')
+  mirrorballMetalnessMap = textureLoader.load('public/assets/texture/MetalGoldPaint002/MetalGoldPaint002_NRM_1K_METALNESS.png')
+  mirrorballRoughnessMap = textureLoader.load('public/assets/texture/MetalGoldPaint002/MetalGoldPaint002_ROUGHNESS_1K_METALNESS.png')
+  
 
   /** 
    * 오브젝트 생성
@@ -70,13 +80,68 @@ export default function () {
    * 
    */
   const create = () => {
-    backgroundPlane = createMeshs.backgroundPlane()
-    mesh1 = createMeshs.createMesh1()
+    //origin mesh
+    let mesh  = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(.02, 24),
+          new THREE.MeshPhysicalMaterial({
+              roughness : 0,
+              transmission : 0.1,
+              thickness : 0.5,
+              color : 'white'
+          })
+    )
+
+    // //floor
+    // const PlateMesh = new THREE.Mesh(
+    //   new THREE.PlaneGeometry(30,30, 20,20),
+    //   new THREE.MeshBasicMaterial({
+    //     color : 'white',
+    //   })
+    // )
+    // PlateMesh.rotation.x = -1
+    // PlateMesh.rotateX(Math.PI/180 * -90)
+    // PlateMesh.position.y = -11
+
+    
+    //mirrorball
+    const mirrorball = new THREE.Mesh(
+      new THREE.IcosahedronGeometry(30, 24),
+      new THREE.MeshPhysicalMaterial({
+          roughness : .3,
+          transmission : 0.94,
+          thickness : 0.3,
+          // side :  THREE.DoubleSide,
+      })
+    )
+    //mirrorballCase
+    const mirrorballCase = new THREE.Mesh(
+      new THREE.CylinderGeometry(28,29,20,64,4),
+      new THREE.MeshPhysicalMaterial({
+        // color : 'gold',
+        map : mirrorballTexture,
+        metalness: 0.01,
+        // roughness: 0.2,
+        metalnessMap: mirrorballMetalnessMap,
+        roughnessMap : mirrorballRoughnessMap,
+        // displacementMap : mirrorballDISP,
+        normalMap : mirrorballMetalnessMap,
+        bumpMap : mirrorballBUMP,
+      })
+      )
+    mirrorballCase.material.needsUpdate = true
+    mirrorballCase.position.y = -20.87
+
+
+
+
+    for(let i = 0; i < particlesCount; i++){
+      let particle = new CreatePaticle(mesh)
+      particles.push(particle);
+      particleGroup.add(particle.mesh);
+    }
     Light1 = createLights.createLight1()
-
-    backgroundPlane.material.map = bgTexture;
-
-    scene.add(backgroundPlane,mesh1,Light1)
+    
+    scene.add(mirrorball , mirrorballCase, particleGroup, Light1)
   };
 
 
@@ -99,26 +164,17 @@ export default function () {
    * 애니메이션 추가
    */
   const addEvent = () => {
+    
     window.addEventListener('resize', resize);
+    window.addEventListener('mousedown', (e)=> {
+      click = 1
+      console.log(click)
+    });
+    window.addEventListener('mouseup', (e)=> {
+      click = 0
+      console.log(click)
+    });
 
-    /**
-     * button click animation to change camera position
-     */
-    buttons.forEach((button,index) => {
-      button.addEventListener('click', (e) => {
-        switch (index) {
-          case 0:
-            camera.position.set( 4,0,6)
-            break;
-          case 1:
-            camera.position.set(0,5,6)
-            break;
-          case 2:
-            camera.position.set(0,0,8)
-          break;
-        }
-      })
-    })
   };
   
 
@@ -128,9 +184,12 @@ export default function () {
   */
   const draw = ( orbitControl) => {
     orbitControl.update();
+
+    //particles update
+    particles.forEach(particle =>{
+      particle.update(click);
+    })
     renderer.render(scene, camera);
-    mesh1.rotation.y += 0.001
-    mesh1.rotation.z += 0.001
     requestAnimationFrame(() => {
       draw(orbitControl);
     });
